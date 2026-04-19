@@ -8,6 +8,35 @@ import (
 	"github.com/ilyakaznacheev/cleanenv"
 )
 
+type Env string
+const (
+    EnvLocal Env = "local"
+    EnvDev Env = "dev"
+    EnvProd Env = "prod"
+)
+
+func (e Env) IsLocal() bool {
+    return e == "local"
+}
+
+func (e Env) IsDev() bool {
+    return e == "dev"
+}
+
+func (e Env) IsProd() bool {
+    return e == "prod"
+}
+
+func (e Env) IsValid() bool {
+    switch e {
+    case EnvLocal, EnvDev, EnvProd:
+        return true
+    default:
+        return false
+    }
+}
+
+
 type RateLimit struct {
     Enabled bool `yaml:"enabled" env-default:"true"`
     Rps uint `yaml:"rps" env-default:"100"`
@@ -35,7 +64,7 @@ type Route struct {
 }
 
 type Config struct {
-    Env string `yaml:"env" env-default:"local"`
+    Env Env `yaml:"env" env-default:"local"`
     Port uint16 `yaml:"port" env-default:"8888"` 
     
     Services []Service `yaml:"services" env-required:"true"`
@@ -74,6 +103,16 @@ func validateRoutes(c *Config) {
     }
 }
 
+func validate(c *Config) {
+    servicesToMap(c) 
+    routesToMap(c) 
+    validateRoutes(c)
+
+    if !c.Env.IsValid() {
+        log.Fatalf("Invalid enviroment type in config: %s", c.Env)
+    }
+}
+
 func ReadConfig() Config {
     configPath := os.Getenv("CONFIG_PATH")
     if configPath == "" {
@@ -88,10 +127,7 @@ func ReadConfig() Config {
     if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
         log.Fatalf("Invalid config: %s", err.Error())
     }
-
-    servicesToMap(&cfg) 
-    routesToMap(&cfg) 
-    validateRoutes(&cfg)
     
+    validate(&cfg)
     return cfg
 }

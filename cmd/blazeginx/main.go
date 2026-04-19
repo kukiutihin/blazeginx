@@ -2,10 +2,15 @@ package main
 
 import (
 	"blazeginx/internal/config"
-	"fmt"
+    "blazeginx/internal/logger"
 )
 
 func main() {
     config := config.ReadConfig()
-    fmt.Println(config)
+    log := logger.GetLogger(config.Env)
+    log.Info(
+        "server started",
+        "env", config.Env,
+        "port", config.Port,
+    )
 }
