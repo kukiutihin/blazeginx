@@ -1,0 +1,31 @@
+#
+# Dont forget to set path to your config in 
+# CONFIG_PATH enviroment variable
+#
+
+env: "local" # local(default), dev, prod
+
+port: 8888 # default
+
+# required
+services:
+  - name: "api"
+    url: "localhost:8080"
+
+# required
+routes:
+  - path: "/api/"
+    service: "api"
+
+rate-limit:
+  enabled: true # default
+  rps: 100 # default
+
+timeout:
+  upstream: 2s # default
+  server: 5s # default
+  idle: 80s # default
+
+static:
+  enabled: false # default
+  root: "./web/dist" # default
