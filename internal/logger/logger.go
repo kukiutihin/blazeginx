@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func GetLogger(env config.Env) *slog.Logger {
+func New(env config.Env) *slog.Logger {
     var log *slog.Logger
     
     switch env {

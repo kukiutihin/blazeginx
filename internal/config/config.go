@@ -15,18 +15,6 @@ const (
     EnvProd Env = "prod"
 )
 
-func (e Env) IsLocal() bool {
-    return e == "local"
-}
-
-func (e Env) IsDev() bool {
-    return e == "dev"
-}
-
-func (e Env) IsProd() bool {
-    return e == "prod"
-}
-
 func (e Env) IsValid() bool {
     switch e {
     case EnvLocal, EnvDev, EnvProd:
@@ -100,6 +88,13 @@ func validateRoutes(c *Config) {
                 s.Path, s.Service,
             )
         }
+
+        if s.Path == "" {
+            log.Fatalf(
+                "Route for service %s cannot be empty",
+                s.Service, 
+            )
+        }
     }
 }
 
@@ -113,7 +108,7 @@ func validate(c *Config) {
     }
 }
 
-func ReadConfig() Config {
+func MustRead() Config {
     configPath := os.Getenv("CONFIG_PATH")
     if configPath == "" {
         log.Fatalf("Config is missing, please set CONFIG_PATH enviroment variable\n")
