@@ -10,12 +10,13 @@ port: 8888 # default
 # required
 services:
   - name: "api"
-    url: "localhost:8080"
+    url: "localhost:8080"    
 
 # required
 routes:
   - path: "/api/"
     service: "api"
+    strip_prefix: false # default
 
 rate-limit:
   enabled: true # default
