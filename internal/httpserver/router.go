@@ -28,7 +28,7 @@ func GetRouter(log *slog.Logger, cfg config.Config) chi.Router {
 		for _, c := range cfg.Routes {
 			r.HandleFunc(
 				CanonicalRoute(c.Path),
-				BuildHandler(c, cfg.ServiceMap[c.Service], cfg.Timeout.Upstream),
+				BuildProxy(c, cfg.ServiceMap[c.Service], cfg.Timeout.Upstream),
 			)
 		}
 	})

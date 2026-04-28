@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func BuildHandler(
+func BuildProxy(
 	route config.Route,
 	addr string,
 	upstreamTimeout time.Duration,
@@ -30,7 +30,11 @@ func BuildHandler(
 		defer cancel()
 
 		req, err := http.NewRequestWithContext(upstreamCtx, r.Method, url, r.Body)
-		if FailIfErr(w, err, http.StatusInternalServerError) {
+		if err != nil {
+			http.Error(w,
+				http.StatusText(http.StatusInternalServerError),
+				http.StatusInternalServerError,
+			)
 			log.Error(
 				"Failed to build request for service",
 				"url", url,
@@ -57,7 +61,11 @@ func BuildHandler(
 			return
 		}
 
-		if FailIfErr(w, err, http.StatusInternalServerError) {
+		if err != nil {
+			http.Error(w,
+				http.StatusText(http.StatusInternalServerError),
+				http.StatusInternalServerError,
+			)
 			log.Error(
 				"Failed to send request to service",
 				"url", url,
@@ -97,7 +105,11 @@ func BuildHandler(
 
 		w.WriteHeader(resp.StatusCode)
 		_, err = io.Copy(w, resp.Body)
-		if FailIfErr(w, err, http.StatusInternalServerError) {
+		if err != nil {
+			http.Error(w,
+				http.StatusText(http.StatusInternalServerError),
+				http.StatusInternalServerError,
+			)
 			log.Error(
 				"Failed to send response",
 				"error", err,

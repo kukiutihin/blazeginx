@@ -7,7 +7,6 @@ import (
 
 	"net/http"
 	"os"
-	"strconv"
 )
 
 func Start() {
@@ -16,11 +15,11 @@ func Start() {
 	log.Info(
 		"server started",
 		"env", config.Env,
-		"port", config.Port,
+		"addr", config.Addr,
 	)
 
 	srv := &http.Server{
-		Addr:        strconv.FormatUint(uint64(config.Port), 10),
+		Addr:        config.Addr,
 		Handler:     httpserver.GetRouter(log, config),
 		IdleTimeout: config.Timeout.Idle,
 	}

@@ -26,8 +26,9 @@ func (e Env) IsValid() bool {
 }
 
 type RateLimit struct {
-	Enabled bool `yaml:"enabled" env-default:"true"`
-	Rps     uint `yaml:"rps" env-default:"100"`
+	Enabled          bool `yaml:"enabled" env-default:"true"`
+	RefillRateInSecs uint `yaml:"refill_rate_secs" env-default:"30"`
+	MaxTokens        uint `yaml:"max_tokens" env-default:"100"`
 }
 
 type Timeout struct {
@@ -54,7 +55,7 @@ type Route struct {
 
 type Config struct {
 	Env  Env    `yaml:"env" env-default:"local"`
-	Port uint16 `yaml:"port" env-default:"8888"`
+	Addr string `yaml:"addr" env-default:"127.0.0.1:8888"`
 
 	Services   []Service `yaml:"services" env-required:"true"`
 	ServiceMap map[string]string
