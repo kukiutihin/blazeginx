@@ -5,7 +5,7 @@
 
 env: "local" # local(default), dev, prod
 
-port: 8888 # default
+addr: "127.0.0.1:8888" # default
 
 # required
 services:
@@ -20,7 +20,10 @@ routes:
 
 rate-limit:
   enabled: true # default
-  rps: 100 # default
+  refill_rate: 30s # default
+  max_tokens: 100 # default
+  default_expiration_time: 30s # default
+  cleanup_interval: 30s #default
 
 timeout:
   upstream: 2s # default

@@ -13,36 +13,55 @@ type userInfo struct {
 	tokensRemain    uint
 }
 
-type TokenBucket struct {
-	data       *storage.Storage
-	maxTokens  uint
-	refillRate uint
+// userInfoStorage is storage.Storage wrap for specific type: userInfo.
+// it will panic if type is not a userInfo
+type userInfoStorage struct {
+	storage *storage.Storage
 }
 
-func NewTokenBucket(cfg config.Config, store *storage.Storage) TokenBucket {
+func (s *userInfoStorage) Add(key string, value userInfo) {
+	s.storage.Add(key, value)
+}
+
+func (s *userInfoStorage) Get(key string) (*userInfo, bool) {
+	valueAny, ok := s.storage.Get(key)
+	if !ok {
+		return nil, false
+	}
+	value, ok := valueAny.(userInfo)
+	if !ok {
+		panic("Incorrect value in storage")
+	}
+	return &value, true
+}
+
+type TokenBucket struct {
+	data       *userInfoStorage
+	maxTokens  uint
+	refillRate time.Duration
+}
+
+func NewTokenBucket(cfg *config.Config) TokenBucket {
 	return TokenBucket{
-		data:       store,
+		data: &userInfoStorage{storage.New(
+			cfg.RateLimit.DefaultExpiration,
+			cfg.RateLimit.CleanupInterval,
+		)},
 		maxTokens:  cfg.RateLimit.MaxTokens,
-		refillRate: cfg.RateLimit.RefillRateInSecs,
+		refillRate: cfg.RateLimit.RefillRate,
 	}
 }
 
 // isAllow waits addr only without port
 func (b *TokenBucket) isAllow(addr string) bool {
 	info, ok := b.data.Get(addr)
-	var passed uint
 	var newTokensRemain uint
 
 	if ok {
-		info, ok := info.(userInfo)
-		if !ok {
-			panic("Incorrect value in storage")
-		}
-
-		passed = uint(time.Since(info.lastRequestTime).Seconds())
-		newTokensRemain = max(
+		tokensAdd := time.Since(info.lastRequestTime).Nanoseconds() / b.refillRate.Nanoseconds()
+		newTokensRemain = min(
 			b.maxTokens,
-			info.tokensRemain+b.refillRate*uint(passed),
+			info.tokensRemain+uint(tokensAdd),
 		)
 	} else {
 		newTokensRemain = b.maxTokens

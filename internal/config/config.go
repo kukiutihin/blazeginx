@@ -26,9 +26,11 @@ func (e Env) IsValid() bool {
 }
 
 type RateLimit struct {
-	Enabled          bool `yaml:"enabled" env-default:"true"`
-	RefillRateInSecs uint `yaml:"refill_rate_secs" env-default:"30"`
-	MaxTokens        uint `yaml:"max_tokens" env-default:"100"`
+	Enabled           bool          `yaml:"enabled" env-default:"true"`
+	MaxTokens         uint          `yaml:"max_tokens" env-default:"100"`
+	RefillRate        time.Duration `yaml:"refill_rate" env-default:"30s"`
+	DefaultExpiration time.Duration `yaml:"default_expiration_time" env-default:"30s"`
+	CleanupInterval   time.Duration `yaml:"cleanup_interval" env-default:"30s"`
 }
 
 type Timeout struct {
