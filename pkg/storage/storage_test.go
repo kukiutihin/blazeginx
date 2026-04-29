@@ -28,6 +28,7 @@ func fill(stor *Storage, n uint) {
 }
 
 func TestValidAddGet(t *testing.T) {
+	t.Parallel()
 	stor := New(time.Hour, -1)
 	assertEquals(0, stor.Size(), t)
 
@@ -43,6 +44,7 @@ func TestValidAddGet(t *testing.T) {
 }
 
 func TestGetNotExists(t *testing.T) {
+	t.Parallel()
 	stor := New(time.Hour, -1)
 
 	stor.Add("keks", 42)
@@ -58,6 +60,7 @@ func TestGetNotExists(t *testing.T) {
 }
 
 func TestAddDuplicate(t *testing.T) {
+	t.Parallel()
 	stor := New(time.Hour, -1)
 
 	stor.Add("keks", "skibidi")
@@ -70,6 +73,7 @@ func TestAddDuplicate(t *testing.T) {
 }
 
 func TestDeleteValid(t *testing.T) {
+	t.Parallel()
 	stor := New(time.Hour, -1)
 	fill(stor, 11)
 	assertEquals(stor.Size(), 11, t)
@@ -81,6 +85,7 @@ func TestDeleteValid(t *testing.T) {
 }
 
 func TestDeleteNonExists(t *testing.T) {
+	t.Parallel()
 	stor := New(time.Hour, -1)
 
 	// must do nothing
@@ -93,6 +98,7 @@ func TestDeleteNonExists(t *testing.T) {
 }
 
 func TestGC(t *testing.T) {
+	t.Parallel()
 	stor := New(time.Second*6, time.Second*3)
 
 	stor.AddWithExpiration("skibop", 10, time.Second*1)

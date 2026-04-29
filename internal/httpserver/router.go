@@ -20,7 +20,7 @@ func GetRouter(log *slog.Logger, cfg config.Config) chi.Router {
 
 	// group of handlers for proxying
 	router.Group(func(r chi.Router) {
-		tokens := NewTokenBucket(&cfg)
+		tokens := NewTokenBucket(cfg.RateLimit)
 		r.Use(tokens.BuildRateLimiter())
 
 		r.Use(Timeout(cfg.Timeout.Server, log))

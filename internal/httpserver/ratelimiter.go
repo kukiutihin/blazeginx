@@ -42,14 +42,14 @@ type TokenBucket struct {
 	refillRate time.Duration
 }
 
-func NewTokenBucket(cfg *config.Config) TokenBucket {
+func NewTokenBucket(cfg config.RateLimit) TokenBucket {
 	return TokenBucket{
 		data: &userInfoStorage{storage.New(
-			cfg.RateLimit.DefaultExpiration,
-			cfg.RateLimit.CleanupInterval,
+			cfg.DefaultExpiration,
+			cfg.CleanupInterval,
 		)},
-		maxTokens:  cfg.RateLimit.MaxTokens,
-		refillRate: cfg.RateLimit.RefillRate,
+		maxTokens:  cfg.MaxTokens,
+		refillRate: cfg.RefillRate,
 	}
 }
 
