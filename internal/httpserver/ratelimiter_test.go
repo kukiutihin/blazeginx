@@ -3,9 +3,15 @@ package httpserver
 import (
 	"blazeginx/internal/config"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
+
+func ServerWithLimiter(cfg config.RateLimit, t *testing.T) *httptest.Server {
+	buckets := NewTokenBucket(cfg)
+	return getServer(t, buckets.BuildRateLimiter())
+}
 
 func TestLimitExceeded(t *testing.T) {
 	t.Parallel()
@@ -15,7 +21,7 @@ func TestLimitExceeded(t *testing.T) {
 		DefaultExpiration: time.Hour * 1,
 		RefillRate:        time.Hour * 1,
 	}
-	server := getServer(cfg, t)
+	server := ServerWithLimiter(cfg, t)
 
 	if status := getRequest(server, t); status != http.StatusOK {
 		t.Errorf("Expected status: %d, but got: %d", http.StatusOK, status)
@@ -38,7 +44,7 @@ func TestRefillTokens(t *testing.T) {
 		DefaultExpiration: time.Hour * 1,
 		RefillRate:        time.Second * 1,
 	}
-	server := getServer(cfg, t)
+	server := ServerWithLimiter(cfg, t)
 
 	getRequest(server, t)
 	getRequest(server, t)
@@ -58,7 +64,7 @@ func TestCrossRefill(t *testing.T) {
 		DefaultExpiration: time.Hour * 1,
 		RefillRate:        time.Second * 1,
 	}
-	server := getServer(cfg, t)
+	server := ServerWithLimiter(cfg, t)
 
 	getRequest(server, t)
 	getRequest(server, t)
@@ -79,7 +85,7 @@ func TestMaxTokens(t *testing.T) {
 		DefaultExpiration: time.Hour * 1,
 		RefillRate:        time.Second * 1,
 	}
-	server := getServer(cfg, t)
+	server := ServerWithLimiter(cfg, t)
 
 	getRequest(server, t)
 	getRequest(server, t)

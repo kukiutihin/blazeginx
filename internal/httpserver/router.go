@@ -23,7 +23,7 @@ func GetRouter(log *slog.Logger, cfg config.Config) chi.Router {
 		tokens := NewTokenBucket(cfg.RateLimit)
 		r.Use(tokens.BuildRateLimiter())
 
-		r.Use(Timeout(cfg.Timeout.Server, log))
+		r.Use(Timeout(cfg.Timeout.Server))
 
 		// Config must be valid. config.MustRead() always valid
 		for _, c := range cfg.Routes {

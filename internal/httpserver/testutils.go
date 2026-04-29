@@ -24,13 +24,14 @@ func emptyRequestLogger(log *slog.Logger) func(next http.Handler) http.Handler {
 	}
 }
 
-func getServer(cfg config.RateLimit, t *testing.T) *httptest.Server {
-	buckets := NewTokenBucket(cfg)
+func getServer(t *testing.T, fs ...func(http.Handler) http.Handler) *httptest.Server {
 	router := chi.NewRouter()
 
 	log := logger.New(config.EnvLocal)
 	router.Use(emptyRequestLogger(log))
-	router.Use(buckets.BuildRateLimiter())
+	for _, f := range fs {
+		router.Use(f)
+	}
 
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

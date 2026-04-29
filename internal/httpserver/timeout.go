@@ -9,9 +9,10 @@ import (
 
 // Timeout takes Duration and returns middleware which passes context.WithTimeout
 // and checks it. If context.DeadlineExceeded writes 504
-func Timeout(t time.Duration, log *slog.Logger) func(next http.Handler) http.Handler {
+func Timeout(t time.Duration) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			log := r.Context().Value(Logger).(*slog.Logger)
 			ctx, cancel := context.WithTimeout(r.Context(), t)
 			defer func() {
 				cancel()
