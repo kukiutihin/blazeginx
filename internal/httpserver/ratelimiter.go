@@ -3,6 +3,7 @@ package httpserver
 import (
 	"blazeginx/internal/config"
 	"blazeginx/pkg/storage"
+	"log"
 	"log/slog"
 	"net/http"
 	"time"
@@ -30,7 +31,7 @@ func (s *userInfoStorage) Get(key string) (*userInfo, bool) {
 	}
 	value, ok := valueAny.(userInfo)
 	if !ok {
-		panic("Incorrect value in storage")
+		log.Fatalf("Incorrect value in storage")
 	}
 	return &value, true
 }
@@ -70,6 +71,7 @@ func (b *TokenBucket) isAllow(addr string) bool {
 	var result bool
 	if newTokensRemain > 0 {
 		result = true
+		newTokensRemain--
 	} else {
 		result = false
 	}
@@ -91,7 +93,14 @@ func (b *TokenBucket) BuildRateLimiter() func(http.Handler) http.Handler {
 				log.Warn("Request rate limit exceeded, request is canceled",
 					"addr", addr,
 				)
+				return
 			}
+
+			rem, _ := b.data.Get(addr)
+			log.Debug(
+				"Request received in Ratelimiter",
+				"tokens remain", rem.tokensRemain,
+			)
 
 			next.ServeHTTP(w, r)
 		})

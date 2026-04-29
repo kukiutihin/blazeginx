@@ -59,15 +59,14 @@ type Config struct {
 	Env  Env    `yaml:"env" env-default:"local"`
 	Addr string `yaml:"addr" env-default:"127.0.0.1:8888"`
 
-	Services   []Service `yaml:"services" env-required:"true"`
-	ServiceMap map[string]string
-
-	Routes   []Route `yaml:"routes" env-required:"true"`
-	RouteMap map[string]string
-
+	Services  []Service `yaml:"services" env-required:"true"`
+	Routes    []Route   `yaml:"routes" env-required:"true"`
 	RateLimit RateLimit `yaml:"rate-limit"`
 	Timeout   Timeout   `yaml:"timeout"`
 	Static    Static    `yaml:"static"`
+
+	RouteMap   map[string]string
+	ServiceMap map[string]string
 }
 
 func servicesToMap(c *Config) {

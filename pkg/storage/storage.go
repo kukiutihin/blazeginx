@@ -56,7 +56,11 @@ func (s *Storage) Delete(key string) {
 }
 
 func (s *Storage) Add(key string, value any) {
-	expiredAt := time.Now().Add(s.defaultExpiration).UnixNano()
+	s.AddWithExpiration(key, value, s.defaultExpiration)
+}
+
+func (s *Storage) AddWithExpiration(key string, value any, exp time.Duration) {
+	expiredAt := time.Now().Add(exp).UnixNano()
 	s.mtex.Lock()
 	s.items[key] = Item{
 		Value:      value,
@@ -79,5 +83,12 @@ func (s *Storage) Get(key string) (any, bool) {
 		}
 	}
 	s.mtex.RUnlock()
-	return item, true
+	return item.Value, true
+}
+
+func (s *Storage) Size() int {
+	s.mtex.RLock()
+	res := len(s.items)
+	s.mtex.RUnlock()
+	return res
 }
