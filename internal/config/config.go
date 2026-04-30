@@ -44,14 +44,9 @@ type Static struct {
 	Root    string `yaml:"root" env-default:"./web/dist"`
 }
 
-type Service struct {
-	Name string `yaml:"name" env-required:"true"`
-	Url  string `yaml:"url" env-required:"true"`
-}
-
 type Route struct {
 	Path        string `yaml:"path" env-required:"true"`
-	Service     string `yaml:"service" env-required:"true"`
+	Url         string `yaml:"url" env-required:"true"`
 	StripPrefix bool   `yaml:"strip_prefix" env-default:"false"`
 }
 
@@ -59,56 +54,29 @@ type Config struct {
 	Env  Env    `yaml:"env" env-default:"local"`
 	Addr string `yaml:"addr" env-default:"127.0.0.1:8888"`
 
-	Services  []Service `yaml:"services" env-required:"true"`
 	Routes    []Route   `yaml:"routes" env-required:"true"`
 	RateLimit RateLimit `yaml:"rate-limit"`
 	Timeout   Timeout   `yaml:"timeout"`
 	Static    Static    `yaml:"static"`
-
-	RouteMap   map[string]string
-	ServiceMap map[string]string
-}
-
-func servicesToMap(c *Config) {
-	c.ServiceMap = make(map[string]string)
-	for _, s := range c.Services {
-		c.ServiceMap[s.Name] = s.Url
-	}
-}
-
-func routesToMap(c *Config) {
-	c.RouteMap = make(map[string]string)
-	for _, s := range c.Routes {
-		c.RouteMap[s.Path] = s.Service
-	}
 }
 
 func validateRoutes(c *Config) {
 	for _, s := range c.Routes {
-		if _, ok := c.ServiceMap[s.Service]; !ok {
-			log.Fatalf(
-				"Route %s to service %s exists, but service doesnt exists",
-				s.Path, s.Service,
-			)
-		}
-
 		if s.Path == "" {
-			log.Fatalf(
-				"Route for service %s cannot be empty",
-				s.Service,
-			)
+			log.Fatalf("Route cannot be empty")
 		}
 	}
 }
 
-func validate(c *Config) {
-	servicesToMap(c)
-	routesToMap(c)
-	validateRoutes(c)
-
+func validateEnv(c *Config) {
 	if !c.Env.IsValid() {
 		log.Fatalf("Invalid enviroment type in config: %s", c.Env)
 	}
+}
+
+func validate(c *Config) {
+	validateRoutes(c)
+	validateEnv(c)
 }
 
 func MustRead() Config {

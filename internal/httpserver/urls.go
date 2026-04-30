@@ -10,7 +10,7 @@ func stripRoutePrefix(path string, pref string) string {
 		return path
 	}
 
-	path = "/" + strings.Trim(path, "/")
+	path = "/" + strings.TrimPrefix(path, "/")
 	pref = "/" + strings.Trim(pref, "/")
 
 	if path == pref {
@@ -25,10 +25,22 @@ func stripRoutePrefix(path string, pref string) string {
 }
 
 // Returns a full url as addr/path, also removes prefix from path if it need
-func CreateUrl(route config.Route, addr string, path string) string {
+func CreateFullUrl(
+	route config.Route,
+	path string,
+	query string,
+) string {
 	if route.StripPrefix {
 		path = stripRoutePrefix(path, route.Path)
 	}
-	addr = strings.TrimSuffix(addr, "/")
-	return addr + path
+
+	url := route.Url
+	url = strings.TrimSuffix(url, "/")
+	url += path
+
+	if query != "" {
+		url += "?" + query
+	}
+
+	return url
 }

@@ -27,9 +27,9 @@ func GetRouter(log *slog.Logger, cfg config.Config) chi.Router {
 
 		// Config must be valid. config.MustRead() always valid
 		for _, c := range cfg.Routes {
-			r.HandleFunc(
-				CanonicalRoute(c.Path),
-				BuildProxy(c, cfg.ServiceMap[c.Service], cfg.Timeout.Upstream),
+			r.Handle(
+				CanonicalChiRoute(c.Path),
+				BuildProxy(c, cfg.Timeout.Upstream),
 			)
 		}
 	})

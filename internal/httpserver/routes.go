@@ -5,7 +5,7 @@ import (
 )
 
 // This func leads route to chi-readable: /something/*
-func CanonicalRoute(route string) string {
+func CanonicalChiRoute(route string) string {
 	if route == "" {
 		panic("Route cannot be empty")
 	}

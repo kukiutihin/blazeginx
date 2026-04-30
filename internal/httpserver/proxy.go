@@ -9,18 +9,10 @@ import (
 	"time"
 )
 
-func BuildProxy(
-	route config.Route,
-	addr string,
-	upstreamTimeout time.Duration,
-) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+func BuildProxy(route config.Route, upstreamTimeout time.Duration) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		url := CreateUrl(route, addr, r.URL.Path)
-
-		if r.URL.RawQuery != "" {
-			url += "?" + r.URL.RawQuery
-		}
+		url := CreateFullUrl(route, r.URL.Path, r.URL.RawQuery)
 
 		log := ctx.Value(Logger).(*slog.Logger)
 		log.Debug("Received in proxy", "url", url)
@@ -115,5 +107,5 @@ func BuildProxy(
 				"error", err,
 			)
 		}
-	}
+	})
 }

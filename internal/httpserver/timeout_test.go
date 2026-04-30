@@ -27,17 +27,25 @@ func serverWithTimeout(
 	timeout time.Duration,
 	sleep time.Duration,
 ) *httptest.Server {
-	return getServer(t,
-		emptyRequestLogger(logger.New(config.EnvLocal)),
-		Timeout(timeout),
-		sleepyMiddleware(sleep),
+	return getServer(
+		[]func(http.Handler) http.Handler{
+			emptyRequestLogger(logger.New(config.EnvLocal)),
+			Timeout(timeout),
+			sleepyMiddleware(sleep),
+		},
+		[]handler{
+			{
+				"/",
+				getHandler(t, "Hi"),
+			},
+		},
 	)
 }
 
 func TestTimeoutValid(t *testing.T) {
 	server := serverWithTimeout(t, time.Second, 0)
 
-	if status := getRequest(server, t); status != http.StatusOK {
+	if status := getRequestCode(server.URL, t); status != http.StatusOK {
 		t.Errorf("Expected status: %d, but got: %d", http.StatusOK, status)
 	}
 }
@@ -45,7 +53,7 @@ func TestTimeoutValid(t *testing.T) {
 func TestTimeoutExceeded(t *testing.T) {
 	server := serverWithTimeout(t, time.Second, time.Second*2)
 
-	if status := getRequest(server, t); status != http.StatusGatewayTimeout {
+	if status := getRequestCode(server.URL, t); status != http.StatusGatewayTimeout {
 		t.Errorf("Expected status: %d, but got: %d",
 			http.StatusGatewayTimeout, status,
 		)
