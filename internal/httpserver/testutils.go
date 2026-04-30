@@ -75,8 +75,14 @@ func getRequest(url string, t *testing.T) (int, string) {
 		t.Errorf("Expected http response, but got an error: %s", err)
 	}
 
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Errorf("Failed to close body: %s", err)
+		}
+	}()
+
 	body, err := io.ReadAll(resp.Body)
-	defer resp.Body.Close()
 	if err != nil {
 		t.Errorf("Failed to read response: %s", err)
 	}
@@ -103,7 +109,10 @@ func serverWithAddr(t *testing.T, url string, hs []handler) *httptest.Server {
 	)
 	t.Logf("listener: %s, new listener: %s", server.Listener.Addr(), listener.Addr())
 
-	server.Listener.Close()
+	err = server.Listener.Close()
+	if err != nil {
+		t.Errorf("Failed to close listener: %s", err)
+	}
 	server.Listener = listener
 	server.Start()
 

@@ -212,7 +212,7 @@ func TestUpstreamTimeout(t *testing.T) {
 		t.Errorf("Expected: %s, but got: %s, with status: %d", "keks", body, status)
 	}
 
-	status, body = getRequest(prox.URL+"/hi/slow/", t)
+	status, _ = getRequest(prox.URL+"/hi/slow/", t)
 	if status != http.StatusGatewayTimeout {
 		t.Errorf("Expected: %d, but got: %d", http.StatusGatewayTimeout, status)
 	}
