@@ -10,12 +10,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-func emptyRequestLogger(log *slog.Logger) func(next http.Handler) http.Handler {
+func NewEmptyRequestLogger(log *slog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := context.WithValue(r.Context(), Logger, log)
@@ -26,8 +27,19 @@ func emptyRequestLogger(log *slog.Logger) func(next http.Handler) http.Handler {
 	}
 }
 
-func getHandler(t *testing.T, message string) http.Handler {
+func NewHandler(t *testing.T, message string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, err := w.Write([]byte(message))
+		if err != nil {
+			t.Errorf("Failed to send response: %s", err)
+		}
+	})
+}
+
+func NewSleepyHandler(t *testing.T, message string, sleepTime time.Duration) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(sleepTime)
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte(message))
 		if err != nil {
@@ -41,14 +53,14 @@ type handler struct {
 	h    http.Handler
 }
 
-func getServerUnstarted(
+func NewServerUnstarted(
 	middlewares []func(http.Handler) http.Handler,
 	handlers []handler,
 ) *httptest.Server {
 	router := chi.NewRouter()
 
 	log := logger.New(config.EnvLocal)
-	router.Use(emptyRequestLogger(log))
+	router.Use(NewEmptyRequestLogger(log))
 	for _, f := range middlewares {
 		router.Use(f)
 	}
@@ -60,16 +72,16 @@ func getServerUnstarted(
 	return httptest.NewUnstartedServer(router)
 }
 
-func getServer(
+func NewServer(
 	middlewares []func(http.Handler) http.Handler,
 	handlers []handler,
 ) *httptest.Server {
-	srv := getServerUnstarted(middlewares, handlers)
+	srv := NewServerUnstarted(middlewares, handlers)
 	srv.Start()
 	return srv
 }
 
-func getRequest(url string, t *testing.T) (int, string) {
+func DoGet(url string, t *testing.T) (int, string) {
 	resp, err := http.Get(url)
 	if err != nil {
 		t.Errorf("Expected http response, but got an error: %s", err)
@@ -90,24 +102,23 @@ func getRequest(url string, t *testing.T) (int, string) {
 	return resp.StatusCode, string(body)
 }
 
-func getRequestCode(url string, t *testing.T) int {
-	status, _ := getRequest(url, t)
+func DoGetCode(url string, t *testing.T) int {
+	status, _ := DoGet(url, t)
 	return status
 }
 
-func serverWithAddr(t *testing.T, url string, hs []handler) *httptest.Server {
+func NewServerWithAddr(t *testing.T, url string, hs []handler) *httptest.Server {
 	listener, err := net.Listen("tcp", url)
 	if err != nil {
 		t.Errorf("Error while creating server: %s", err)
 	}
 
-	server := getServerUnstarted(
+	server := NewServerUnstarted(
 		[]func(http.Handler) http.Handler{
-			emptyRequestLogger(logger.New(config.EnvLocal)),
+			NewEmptyRequestLogger(logger.New(config.EnvLocal)),
 		},
 		hs,
 	)
-	t.Logf("listener: %s, new listener: %s", server.Listener.Addr(), listener.Addr())
 
 	err = server.Listener.Close()
 	if err != nil {

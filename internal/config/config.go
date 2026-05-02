@@ -45,8 +45,10 @@ type Static struct {
 }
 
 type Route struct {
+	Name        string `yaml:"name" env-required:"true"`
 	Path        string `yaml:"path" env-required:"true"`
 	Url         string `yaml:"url" env-required:"true"`
+	HealthPath  string `yaml:"health_path" env-default:"/healthz"`
 	StripPrefix bool   `yaml:"strip_prefix" env-default:"false"`
 }
 
@@ -61,10 +63,19 @@ type Config struct {
 }
 
 func validateRoutes(c *Config) {
+	was := make(map[string]string)
 	for _, s := range c.Routes {
 		if s.Path == "" {
-			log.Fatalf("Route cannot be empty")
+			log.Fatalf("Route path cannot be empty")
 		}
+		ent, ok := was[s.Path]
+		if ok {
+			log.Fatalf("Route paths for services: %s, %s cannot be same",
+				ent, s.Name,
+			)
+		}
+
+		was[s.Path] = s.Name
 	}
 }
 

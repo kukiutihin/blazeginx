@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"blazeginx/internal/config"
+	"blazeginx/internal/logger"
 	"context"
 	"io"
 	"log/slog"
@@ -9,13 +10,38 @@ import (
 	"time"
 )
 
+type upstreamContext struct {
+	ResponseWriter http.ResponseWriter
+	Log            *slog.Logger
+	Upstream       string
+}
+
+func handleUpstreamInternalErr(message string, err error, ctx upstreamContext) {
+	http.Error(ctx.ResponseWriter,
+		http.StatusText(http.StatusInternalServerError),
+		http.StatusInternalServerError,
+	)
+	ctx.Log.Error(message,
+		"upstream_name", ctx.Upstream,
+		"error", err,
+	)
+}
+
 func BuildProxy(route config.Route, upstreamTimeout time.Duration) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		url := CreateFullUrl(route, r.URL.Path, r.URL.RawQuery)
+		log := logger.GetServiceLogger(ctx.Value(Logger).(*slog.Logger), "proxy")
+		uctx := upstreamContext{
+			ResponseWriter: w,
+			Log:            log,
+			Upstream:       route.Name,
+		}
 
-		log := ctx.Value(Logger).(*slog.Logger)
-		log.Debug("Received in proxy", "url", url)
+		url, err := CreateFullUrl(route, r.URL.Path, r.URL.RawQuery)
+		if err != nil {
+			handleUpstreamInternalErr("Failed to create request to upstream", err, uctx)
+			return
+		}
 
 		// Context with upstream timeout
 		upstreamCtx, cancel := context.WithTimeout(ctx, upstreamTimeout)
@@ -23,15 +49,7 @@ func BuildProxy(route config.Route, upstreamTimeout time.Duration) http.Handler 
 
 		req, err := http.NewRequestWithContext(upstreamCtx, r.Method, url, r.Body)
 		if err != nil {
-			http.Error(w,
-				http.StatusText(http.StatusInternalServerError),
-				http.StatusInternalServerError,
-			)
-			log.Error(
-				"Failed to build request for service",
-				"url", url,
-				"error", err,
-			)
+			handleUpstreamInternalErr("Failed to create request to upstream", err, uctx)
 			return
 		}
 
@@ -54,32 +72,12 @@ func BuildProxy(route config.Route, upstreamTimeout time.Duration) http.Handler 
 		}
 
 		if err != nil {
-			http.Error(w,
-				http.StatusText(http.StatusInternalServerError),
-				http.StatusInternalServerError,
-			)
-			log.Error(
-				"Failed to send request to service",
-				"url", url,
-				"error", err,
-			)
+			handleUpstreamInternalErr("Failed to send request to upstream", err, uctx)
 			return
 		}
 		defer func() {
-			err := resp.Body.Close()
-			if err != nil {
-				log.Error(
-					"Failed to close connection",
-					"error", err,
-				)
-			}
+			_ = resp.Body.Close()
 		}()
-
-		log.Debug(
-			"Received a response from service",
-			"url", url,
-			"status", resp.Status,
-		)
 
 		if IsDone(ctx) {
 			return

@@ -16,7 +16,8 @@ func GetRouter(log *slog.Logger, cfg config.Config) chi.Router {
 
 	// TODO: /metrics handler
 
-	// TODO: /healthz handler
+	router.Handle("/healthz", NewHealthzHandler(cfg.Routes, cfg.Timeout.Upstream))
+	router.Handle("/healthz/", NewHealthzHandler(cfg.Routes, cfg.Timeout.Upstream))
 
 	// group of handlers for proxying
 	router.Group(func(r chi.Router) {
@@ -28,7 +29,7 @@ func GetRouter(log *slog.Logger, cfg config.Config) chi.Router {
 		// Config must be valid. config.MustRead() always valid
 		for _, c := range cfg.Routes {
 			r.Handle(
-				CanonicalChiRoute(c.Path),
+				NormalizeProxyRoute(c.Path),
 				BuildProxy(c, cfg.Timeout.Upstream),
 			)
 		}

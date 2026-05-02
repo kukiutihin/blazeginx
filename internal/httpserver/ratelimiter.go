@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"blazeginx/internal/config"
+	"blazeginx/internal/logger"
 	"blazeginx/pkg/storage"
 	"log"
 	"log/slog"
@@ -86,22 +87,15 @@ func (b *TokenBucket) isAllow(addr string) bool {
 func (b *TokenBucket) BuildRateLimiter() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log := r.Context().Value(Logger).(*slog.Logger)
+			log := logger.GetServiceLogger(r.Context().Value(Logger).(*slog.Logger), "ratelimiter")
 			addr := r.URL.Hostname()
 			if !b.isAllow(addr) {
-				http.Error(w, "Too many requests", http.StatusTooManyRequests)
-				log.Warn("Request rate limit exceeded, request is canceled",
+				http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
+				log.Warn("Request rate limit exceeded, request was canceled",
 					"addr", addr,
 				)
 				return
 			}
-
-			rem, _ := b.data.Get(addr)
-			log.Debug(
-				"Request received in Ratelimiter",
-				"tokens remain", rem.tokensRemain,
-			)
-
 			next.ServeHTTP(w, r)
 		})
 	}

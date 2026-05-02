@@ -10,14 +10,14 @@ import (
 
 func ServerWithLimiter(cfg config.RateLimit, t *testing.T) *httptest.Server {
 	buckets := NewTokenBucket(cfg)
-	return getServer(
+	return NewServer(
 		[]func(http.Handler) http.Handler{
 			buckets.BuildRateLimiter(),
 		},
 		[]handler{
 			{
 				"/",
-				getHandler(t, "Hi"),
+				NewHandler(t, "Hi"),
 			},
 		},
 	)
@@ -33,15 +33,15 @@ func TestLimitExceeded(t *testing.T) {
 	}
 	server := ServerWithLimiter(cfg, t)
 
-	if status := getRequestCode(server.URL, t); status != http.StatusOK {
+	if status := DoGetCode(server.URL, t); status != http.StatusOK {
 		t.Errorf("Expected status: %d, but got: %d", http.StatusOK, status)
 	}
 
-	if status := getRequestCode(server.URL, t); status != http.StatusOK {
+	if status := DoGetCode(server.URL, t); status != http.StatusOK {
 		t.Errorf("Expected status: %d, but got: %d", http.StatusOK, status)
 	}
 
-	if status := getRequestCode(server.URL, t); status != http.StatusTooManyRequests {
+	if status := DoGetCode(server.URL, t); status != http.StatusTooManyRequests {
 		t.Errorf("Expected status: %d, but got: %d", http.StatusTooManyRequests, status)
 	}
 }
@@ -56,12 +56,12 @@ func TestRefillTokens(t *testing.T) {
 	}
 	server := ServerWithLimiter(cfg, t)
 
-	getRequestCode(server.URL, t)
-	getRequestCode(server.URL, t)
+	DoGetCode(server.URL, t)
+	DoGetCode(server.URL, t)
 
 	time.Sleep(time.Second * 1)
 
-	if status := getRequestCode(server.URL, t); status != http.StatusOK {
+	if status := DoGetCode(server.URL, t); status != http.StatusOK {
 		t.Errorf("Expected status: %d, but got: %d", http.StatusOK, status)
 	}
 }
@@ -76,13 +76,13 @@ func TestCrossRefill(t *testing.T) {
 	}
 	server := ServerWithLimiter(cfg, t)
 
-	getRequestCode(server.URL, t)
-	getRequestCode(server.URL, t)
+	DoGetCode(server.URL, t)
+	DoGetCode(server.URL, t)
 
 	time.Sleep(time.Second * 1)
 
-	getRequestCode(server.URL, t)
-	if status := getRequestCode(server.URL, t); status != http.StatusTooManyRequests {
+	DoGetCode(server.URL, t)
+	if status := DoGetCode(server.URL, t); status != http.StatusTooManyRequests {
 		t.Errorf("Expected status: %d, but got: %d", http.StatusTooManyRequests, status)
 	}
 }
@@ -97,17 +97,17 @@ func TestMaxTokens(t *testing.T) {
 	}
 	server := ServerWithLimiter(cfg, t)
 
-	getRequestCode(server.URL, t)
-	getRequestCode(server.URL, t)
-	getRequestCode(server.URL, t)
+	DoGetCode(server.URL, t)
+	DoGetCode(server.URL, t)
+	DoGetCode(server.URL, t)
 
 	time.Sleep(time.Second * 5)
 
-	getRequestCode(server.URL, t)
-	getRequestCode(server.URL, t)
-	getRequestCode(server.URL, t)
-	getRequestCode(server.URL, t)
-	if status := getRequestCode(server.URL, t); status != http.StatusTooManyRequests {
+	DoGetCode(server.URL, t)
+	DoGetCode(server.URL, t)
+	DoGetCode(server.URL, t)
+	DoGetCode(server.URL, t)
+	if status := DoGetCode(server.URL, t); status != http.StatusTooManyRequests {
 		t.Errorf("Expected status: %d, but got: %d", http.StatusTooManyRequests, status)
 	}
 }

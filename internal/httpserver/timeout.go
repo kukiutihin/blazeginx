@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"blazeginx/internal/logger"
 	"context"
 	"log/slog"
 	"net/http"
@@ -12,12 +13,12 @@ import (
 func Timeout(t time.Duration) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			log := r.Context().Value(Logger).(*slog.Logger)
+			log := logger.GetServiceLogger(r.Context().Value(Logger).(*slog.Logger), "timeout")
 			ctx, cancel := context.WithTimeout(r.Context(), t)
 			defer func() {
 				cancel()
 				if ctx.Err() == context.DeadlineExceeded {
-					http.Error(w, "Gateway Timeout", http.StatusGatewayTimeout)
+					http.Error(w, http.StatusText(http.StatusGatewayTimeout), http.StatusGatewayTimeout)
 					log.Warn("Request declined, server timeout exceeded")
 				}
 			}()

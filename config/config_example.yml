@@ -8,14 +8,15 @@ env: "local" # local(default), dev, prod
 addr: "127.0.0.1:8888" # default
 
 # required
-services:
-  - name: "api"
-    url: "localhost:8080"    
-
-# required
 routes:
-  - path: "/api/"
-    service: "api"
+  - name: api
+    path: "/api/"
+    url: "http://127.0.0.1:8080"
+    strip_prefix: false # default
+
+  - name: chepuxa 
+    path: "/ckeks/"
+    url: "http://127.0.0.1:8133"
     strip_prefix: false # default
 
 rate-limit:

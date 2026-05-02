@@ -25,3 +25,9 @@ func New(env config.Env) *slog.Logger {
 
 	return log
 }
+
+func GetServiceLogger(log *slog.Logger, service string) *slog.Logger {
+	return log.With(
+		slog.String("service", service),
+	)
+}

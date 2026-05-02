@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"blazeginx/internal/config"
+	"net/url"
 	"strings"
 )
 
@@ -25,22 +26,18 @@ func stripRoutePrefix(path string, pref string) string {
 }
 
 // Returns a full url as addr/path, also removes prefix from path if it need
-func CreateFullUrl(
-	route config.Route,
-	path string,
-	query string,
-) string {
+func CreateFullUrl(route config.Route, path string, query string) (string, error) {
 	if route.StripPrefix {
 		path = stripRoutePrefix(path, route.Path)
 	}
 
-	url := route.Url
-	url = strings.TrimSuffix(url, "/")
-	url += path
-
-	if query != "" {
-		url += "?" + query
+	u, err := url.Parse(route.Url)
+	if err != nil {
+		return "", err
 	}
 
-	return url
+	u.Path = path
+	u.RawQuery = query
+
+	return u.String(), nil
 }

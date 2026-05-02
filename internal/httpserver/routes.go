@@ -4,14 +4,13 @@ import (
 	"strings"
 )
 
-// This func leads route to chi-readable: /something/*
-func CanonicalChiRoute(route string) string {
+// This func leads any route to /something/*
+func NormalizeProxyRoute(route string) string {
 	if route == "" {
 		panic("Route cannot be empty")
 	}
 
-	route = strings.TrimLeft(route, " /")
-	route = strings.TrimRight(route, " /")
+	route = strings.Trim(route, " /")
 
 	route = "/" + route
 	route += "/*"
