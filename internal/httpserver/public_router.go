@@ -16,9 +16,6 @@ func GetRouter(log *slog.Logger, cfg config.Config) chi.Router {
 
 	// TODO: /metrics handler
 
-	router.Handle("/healthz", NewHealthzHandler(cfg.Routes, cfg.Timeout.Upstream))
-	router.Handle("/healthz/", NewHealthzHandler(cfg.Routes, cfg.Timeout.Upstream))
-
 	// group of handlers for proxying
 	router.Group(func(r chi.Router) {
 		tokens := NewTokenBucket(cfg.RateLimit)
