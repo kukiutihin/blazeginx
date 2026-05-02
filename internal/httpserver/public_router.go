@@ -14,12 +14,12 @@ func GetRouter(log *slog.Logger, cfg config.Config) chi.Router {
 	router.Use(middleware.RequestID)
 	router.Use(RequestLogger(log))
 
-	// TODO: /metrics handler
-
 	// group of handlers for proxying
 	router.Group(func(r chi.Router) {
 		tokens := NewTokenBucket(cfg.RateLimit)
-		r.Use(tokens.BuildRateLimiter())
+		if cfg.RateLimit.Enabled {
+			r.Use(tokens.BuildRateLimiter())
+		}
 
 		r.Use(Timeout(cfg.Timeout.Server))
 
@@ -32,7 +32,9 @@ func GetRouter(log *slog.Logger, cfg config.Config) chi.Router {
 		}
 	})
 
-	// TODO: static fallback
+	if cfg.Static.Enabled {
+		router.NotFound(NewStaticHandler(cfg.Static).ServeHTTP)
+	}
 
 	return router
 }

@@ -53,8 +53,9 @@ type Route struct {
 }
 
 type Config struct {
-	Env  Env    `yaml:"env" env-default:"local"`
-	Addr string `yaml:"addr" env-default:"127.0.0.1:8888"`
+	Env       Env    `yaml:"env" env-default:"local"`
+	Addr      string `yaml:"addr" env-default:"127.0.0.1:8888"`
+	AdminAddr string `yaml:"admin_addr" env-default:"127.0.0.1:9999"`
 
 	Routes    []Route   `yaml:"routes" env-required:"true"`
 	RateLimit RateLimit `yaml:"rate-limit"`
@@ -103,6 +104,10 @@ func MustRead() Config {
 	var cfg Config
 	if err := cleanenv.ReadConfig(configPath, &cfg); err != nil {
 		log.Fatalf("Invalid config: %s", err.Error())
+	}
+
+	if cfg.Addr == cfg.AdminAddr {
+		log.Fatalf("addr and admin_addr cannot be same")
 	}
 
 	validate(&cfg)

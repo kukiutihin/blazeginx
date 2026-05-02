@@ -6,6 +6,7 @@
 env: "local" # local(default), dev, prod
 
 addr: "127.0.0.1:8888" # default
+admin_addr: "127.0.0.1:9999" # default
 
 # required
 routes:

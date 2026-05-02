@@ -8,17 +8,31 @@ import (
 
 func checkGet(act any, ok bool, req any, t *testing.T) {
 	if !ok {
-		t.Errorf("expected: %s, but got: %s", req, "")
+		t.Errorf("expected: %v, but got: %v", req, "")
 	}
 	if act != req {
-		t.Errorf("expected: %s, but got: %s", req, act)
+		t.Errorf("expected: %v, but got: %v", req, act)
 	}
 }
 
 func assertEquals(act any, req any, t *testing.T) {
 	if act != req {
-		t.Errorf("expected: %s, but got: %s", req, act)
+		t.Errorf("expected: %v, but got: %v", req, act)
 	}
+}
+
+func waitSize(t *testing.T, stor *Storage, want int, timeout time.Duration) {
+	t.Helper()
+
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if got := stor.Size(); got == want {
+			return
+		}
+		time.Sleep(time.Millisecond * 10)
+	}
+
+	t.Fatalf("expected storage size %v, but got %v", want, stor.Size())
 }
 
 func fill(stor *Storage, n uint) {
@@ -106,11 +120,9 @@ func TestGC(t *testing.T) {
 	stor.Add("long live skib", 13) // with default expiration
 	assertEquals(stor.Size(), 3, t)
 
-	time.Sleep(time.Second * 3)
-	assertEquals(stor.Size(), 1, t)
+	waitSize(t, stor, 1, time.Second*5)
 	res, ok := stor.Get("long live skib")
 	checkGet(res, ok, 13, t)
 
-	time.Sleep(time.Second * 3)
-	assertEquals(stor.Size(), 0, t)
+	waitSize(t, stor, 0, time.Second*5)
 }

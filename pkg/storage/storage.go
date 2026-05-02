@@ -44,15 +44,19 @@ func (s *Storage) startGC() {
 }
 
 func (s *Storage) deleteExpired() {
+	s.mtex.Lock()
 	for key, value := range s.items {
 		if value.Expiration <= time.Now().UnixNano() {
-			s.Delete(key)
+			delete(s.items, key)
 		}
 	}
+	s.mtex.Unlock()
 }
 
 func (s *Storage) Delete(key string) {
+	s.mtex.Lock()
 	delete(s.items, key)
+	s.mtex.Unlock()
 }
 
 func (s *Storage) Add(key string, value any) {

@@ -6,6 +6,7 @@ import (
 	"blazeginx/pkg/storage"
 	"log"
 	"log/slog"
+	"net"
 	"net/http"
 	"time"
 )
@@ -88,7 +89,13 @@ func (b *TokenBucket) BuildRateLimiter() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			log := logger.GetServiceLogger(r.Context().Value(Logger).(*slog.Logger), "ratelimiter")
-			addr := r.URL.Hostname()
+			addr, _, err := net.SplitHostPort(r.RemoteAddr)
+			if err != nil {
+				log.Warn("Failed to parse remote addr",
+					"addr", r.RemoteAddr,
+				)
+			}
+
 			if !b.isAllow(addr) {
 				http.Error(w, http.StatusText(http.StatusTooManyRequests), http.StatusTooManyRequests)
 				log.Warn("Request rate limit exceeded, request was canceled",

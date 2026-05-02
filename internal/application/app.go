@@ -21,7 +21,7 @@ func Start() {
 	)
 
 	local := &http.Server{
-		Addr:        "127.0.0.1:9990",
+		Addr:        config.AdminAddr,
 		Handler:     httpserver.GetLocalRouter(localLog, config),
 		IdleTimeout: config.Timeout.Idle,
 	}

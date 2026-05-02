@@ -13,11 +13,11 @@ import (
 )
 
 type healthUpstreamResponse struct {
-	Name         string        `json:"name"`
-	Status       int           `json:"status,omitempty"`
-	ResponseTime time.Duration `json:"response_time,omitempty"`
-	Body         string        `json:"response,omitempty"`
-	Error        string        `json:"error,omitempty"`
+	Name           string `json:"name"`
+	Status         int    `json:"status,omitempty"`
+	ResponseTimeMs int64  `json:"response_time_ms,omitempty"`
+	Body           string `json:"response,omitempty"`
+	Error          string `json:"error,omitempty"`
 }
 
 type healthResponse struct {
@@ -75,8 +75,8 @@ func NewHealthzHandler(routes []config.Route, timeout time.Duration) http.Handle
 			cancel()
 
 			upstreamResponse := healthUpstreamResponse{
-				Name:         route.Name,
-				ResponseTime: time.Duration(elapsed.Milliseconds()),
+				Name:           route.Name,
+				ResponseTimeMs: elapsed.Milliseconds(),
 			}
 
 			if err != nil {
@@ -86,7 +86,7 @@ func NewHealthzHandler(routes []config.Route, timeout time.Duration) http.Handle
 				)
 				if upstreamCtx.Err() == context.DeadlineExceeded {
 					upstreamResponse.Error = "timeout"
-					upstreamResponse.ResponseTime = 0
+					upstreamResponse.ResponseTimeMs = 0
 				} else {
 					upstreamResponse.Error = err.Error()
 				}

@@ -94,7 +94,7 @@ func TestHealthValid(t *testing.T) {
 
 	decoded := decodeResponse(t, body)
 	if diff := cmp.Diff(want, decoded,
-		cmpopts.IgnoreFields(healthUpstreamResponse{}, "ResponseTime"),
+		cmpopts.IgnoreFields(healthUpstreamResponse{}, "ResponseTimeMs"),
 	); diff != "" {
 		t.Fatalf("Mismatch: %s", diff)
 	}
@@ -134,7 +134,7 @@ func TestHealthNotExists(t *testing.T) {
 
 	decoded := decodeResponse(t, body)
 	if diff := cmp.Diff(want, decoded,
-		cmpopts.IgnoreFields(healthUpstreamResponse{}, "ResponseTime"),
+		cmpopts.IgnoreFields(healthUpstreamResponse{}, "ResponseTimeMs"),
 	); diff != "" {
 		t.Fatalf("Mismatch: %s", diff)
 	}
@@ -197,7 +197,7 @@ func TestHealthTimeout(t *testing.T) {
 
 	decoded := decodeResponse(t, body)
 	if diff := cmp.Diff(want, decoded,
-		cmpopts.IgnoreFields(healthUpstreamResponse{}, "ResponseTime"),
+		cmpopts.IgnoreFields(healthUpstreamResponse{}, "ResponseTimeMs"),
 	); diff != "" {
 		t.Fatalf("Mismatch: %s", diff)
 	}
