@@ -1,6 +1,7 @@
 package config
 
 import (
+	"blazeginx/internal/routing"
 	"log"
 	"os"
 	"time"
@@ -25,18 +26,16 @@ func (e Env) IsValid() bool {
 	}
 }
 
-type RateLimit struct {
-	Enabled           bool          `yaml:"enabled" env-default:"true"`
-	MaxTokens         uint          `yaml:"max_tokens" env-default:"100"`
-	RefillRate        time.Duration `yaml:"refill_rate" env-default:"30s"`
+type Storage struct {
 	DefaultExpiration time.Duration `yaml:"default_expiration_time" env-default:"30s"`
 	CleanupInterval   time.Duration `yaml:"cleanup_interval" env-default:"30s"`
 }
 
-type Timeout struct {
-	Upstream time.Duration `yaml:"upstream" env-default:"2s"`
-	Server   time.Duration `yaml:"server" env-default:"5s"`
-	Idle     time.Duration `yaml:"idle" env-default:"60s"`
+type RateLimit struct {
+	Enabled    bool          `yaml:"enabled" env-default:"true"`
+	MaxTokens  uint          `yaml:"max_tokens" env-default:"100"`
+	RefillRate time.Duration `yaml:"refill_rate" env-default:"30s"`
+	Storage    Storage
 }
 
 type Static struct {
@@ -44,12 +43,25 @@ type Static struct {
 	Root    string `yaml:"root" env-default:"./web/dist"`
 }
 
-type Route struct {
-	Name        string `yaml:"name" env-required:"true"`
-	Path        string `yaml:"path" env-required:"true"`
-	Url         string `yaml:"url" env-required:"true"`
-	HealthPath  string `yaml:"health_path" env-default:"/healthz"`
-	StripPrefix bool   `yaml:"strip_prefix" env-default:"false"`
+type Server struct {
+	ResponseHeaderTimeout time.Duration `yaml:"response_header_timeout" env-default:"5s"`
+	IdleConnTimeout       time.Duration `yaml:"idle_conn_timeout" env-default:"60s"`
+}
+
+type Upstream struct {
+	MaxConnsPerHost       uint          `yaml:"max_conns_per_host" env-default:"64"`
+	MaxIdleConnsPerHost   uint          `yaml:"max_idle_conns_per_host" env-default:"32"`
+	IdleConnTimeout       time.Duration `yaml:"idle_conn_timeout" env-default:"60s"`
+	ResponseHeaderTimeout time.Duration `yaml:"response_header_timeout" env-default:"2s"`
+	Services              []Service     `yaml:"services" env-required:"true"`
+}
+
+type Service struct {
+	Name        string   `yaml:"name" env-required:"true"`
+	Path        string   `yaml:"path" env-required:"true"`
+	Urls        []string `yaml:"urls" env-required:"true"`
+	HealthPath  string   `yaml:"health_path" env-default:"/healthz"`
+	StripPrefix bool     `yaml:"strip_prefix" env-default:"false"`
 }
 
 type Config struct {
@@ -57,38 +69,43 @@ type Config struct {
 	Addr      string `yaml:"addr" env-default:"127.0.0.1:8888"`
 	AdminAddr string `yaml:"admin_addr" env-default:"127.0.0.1:9999"`
 
-	Routes    []Route   `yaml:"routes" env-required:"true"`
+	Server    Server    `yaml:"server"`
+	Upstream  Upstream  `yaml:"upstream" env-required:"true"`
 	RateLimit RateLimit `yaml:"rate-limit"`
-	Timeout   Timeout   `yaml:"timeout"`
 	Static    Static    `yaml:"static"`
 }
 
-func validateRoutes(c *Config) {
-	was := make(map[string]string)
-	for _, s := range c.Routes {
-		if s.Path == "" {
-			log.Fatalf("Route path cannot be empty")
+func normalizeServices(c *Config) {
+	wasPath := make(map[string]string)
+	wasUrl := make(map[string]int)
+
+	for _, s := range c.Upstream.Services {
+		nPath, err := routing.NormalizeRoutePath(s.Path)
+		if err != nil {
+			log.Fatalf("%s", err.Error())
 		}
-		ent, ok := was[s.Path]
+		ent, ok := wasPath[nPath]
 		if ok {
 			log.Fatalf("Route paths for services: %s, %s cannot be same",
 				ent, s.Name,
 			)
 		}
+		wasPath[nPath] = s.Name
+		s.Path = nPath
 
-		was[s.Path] = s.Name
+		for i, u := range s.Urls {
+			nUrl, err := routing.NormalizeUrl(u)
+			if err != nil {
+				log.Fatalf("service %s: %s", s.Name, err.Error())
+			}
+			_, ok = wasUrl[nUrl]
+			if ok {
+				log.Fatalf("URL %s is used multiple times in services", nUrl)
+			}
+			wasUrl[nUrl] = 67
+			s.Urls[i] = nUrl
+		}
 	}
-}
-
-func validateEnv(c *Config) {
-	if !c.Env.IsValid() {
-		log.Fatalf("Invalid enviroment type in config: %s", c.Env)
-	}
-}
-
-func validate(c *Config) {
-	validateRoutes(c)
-	validateEnv(c)
 }
 
 func MustRead() Config {
@@ -106,10 +123,14 @@ func MustRead() Config {
 		log.Fatalf("Invalid config: %s", err.Error())
 	}
 
+	normalizeServices(&cfg)
+
+	if !cfg.Env.IsValid() {
+		log.Fatalf("Invalid enviroment type in config: %s", cfg.Env)
+	}
+
 	if cfg.Addr == cfg.AdminAddr {
 		log.Fatalf("addr and admin_addr cannot be same")
 	}
-
-	validate(&cfg)
 	return cfg
 }
